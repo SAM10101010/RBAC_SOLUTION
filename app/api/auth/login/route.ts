@@ -1,43 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { generateToken } from "@/lib/auth"
-
-// Demo users database (in production, use real database)
-const DEMO_USERS = [
-  {
-    id: "1",
-    email: "admin@example.com",
-    password: "password",
-    name: "Admin User",
-    role: "admin" as const,
-  },
-  {
-    id: "2",
-    email: "editor@example.com",
-    password: "password",
-    name: "Editor User",
-    role: "editor" as const,
-  },
-  {
-    id: "3",
-    email: "viewer@example.com",
-    password: "password",
-    name: "Viewer User",
-    role: "viewer" as const,
-  },
-]
+import { query } from "@/lib/db-postgres"
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
 
-    const user = DEMO_USERS.find((u) => u.email === email && u.password === password)
+    // Find user in database
+    const result = await query('SELECT * FROM users WHERE email = $1 AND password = $2', [email, password])
+    const user = result.rows[0]
 
     if (!user) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 })
     }
 
     const token = await generateToken({
-      userId: user.id,
+      userId: user.id.toString(),
       email: user.email,
       role: user.role,
     })
@@ -45,13 +23,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       token,
       user: {
-        id: user.id,
+        id: user.id.toString(),
         email: user.email,
         name: user.name,
         role: user.role,
       },
+      redirectTo: "/" // Always redirect to home page which handles role-based rendering
     })
-  } catch {
+  } catch (error) {
+    console.error('Login error:', error)
     return NextResponse.json({ message: "Invalid request" }, { status: 400 })
   }
 }

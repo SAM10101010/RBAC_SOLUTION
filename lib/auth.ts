@@ -1,6 +1,6 @@
 import { jwtVerify, SignJWT } from "jose"
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key-change-in-production")
+const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production")
 
 export interface TokenPayload {
   userId: string
